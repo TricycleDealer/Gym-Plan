@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Gym Aufgaben App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(120deg, #232526, #414345);
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      text-align: center;
+      padding: 2rem 1rem 1rem 1rem;
+      font-size: 2rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      background: rgba(0,0,0,0.2);
+    }
+    .container {
+      max-width: 500px;
+      margin: 2rem auto;
+      background: rgba(0,0,0,0.3);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      padding: 2rem 1rem;
+    }
+    .muscle-group {
+      margin-bottom: 2rem;
+    }
+    .muscle-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: #ffd700;
+      letter-spacing: 1px;
+    }
+    .exercise-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .exercise-item {
+      display: flex;
+      align-items: center;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      padding: 0.7rem 0.8rem;
+      transition: background 0.2s;
+    }
+    .exercise-item.done {
+      background: rgba(34,139,34,0.2);
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+    .exercise-name {
+      flex: 1;
+      font-size: 1rem;
+    }
+    .exercise-desc {
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-left: 0.5rem;
+    }
+    .check-btn {
+      background: #ffd700;
+      border: none;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-left: 0.7rem;
+      transition: background 0.2s;
+    }
+    .check-btn:active {
+      background: #ffb700;
+    }
+    .reset-btn {
+      display: block;
+      margin: 2rem auto 0 auto;
+      background: #ffd700;
+      color: #232526;
+      border: none;
+      border-radius: 8px;
+      padding: 0.7rem 2rem;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: background 0.2s;
+    }
+    .reset-btn:active {
+      background: #ffb700;
+    }
+    @media (max-width: 600px) {
+      .container { max-width: 98vw; padding: 1rem 0.2rem; }
+      header { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header style="position:relative;">
+    🏋️‍♂️ Gym Aufgaben Tracker
+    <button id="settingsBtn" style="position:absolute;top:18px;right:18px;background:none;border:none;font-size:1.7rem;cursor:pointer;color:#ffd700;">⚙️</button>
+  </header>
+  <div class="container" id="app"></div>
+  <style>
+    #exerciseScroll {
+      max-height: 55vh;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+    }
+    .search-bar {
+      width: 100%;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: 1px solid #ffd700;
+      font-size: 1rem;
+      margin-bottom: 1.2rem;
+      background: #232526;
+      color: #ffd700;
+      box-sizing: border-box;
+    }
+    ::-webkit-scrollbar { width: 8px; background: #232526; }
+    ::-webkit-scrollbar-thumb { background: #ffd700; border-radius: 8px; }
+  </style>
+  <button class="reset-btn" id="resetBtn" style="display:none">Alle zurücksetzen</button>
+  <button class="reset-btn" id="backBtn" style="display:none;background:#444;color:#ffd700;margin-top:1rem">Zurück</button>
+  <div id="settingsModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#232526;padding:2rem 1.2rem;border-radius:16px;max-width:400px;width:90vw;box-shadow:0 4px 24px #000;position:relative;display:flex;flex-direction:column;">
+      <button id="closeSettings" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:1.3rem;color:#ffd700;cursor:pointer;">✖</button>
+      <div style="font-size:1.2rem;font-weight:bold;margin-bottom:1.2rem;text-align:center;color:#ffd700;">Gewichte einstellen</div>
+      <input class="search-bar" id="settingsSearchInput" type="text" placeholder="Übung suchen..." autocomplete="off" style="margin-bottom:1rem;">
+      <div id="settingsContent" style="flex:1;max-height:45vh;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <script>
+    // --- Datenstruktur ---
+    const plans = {
+      pull: [
+        { name: "Klimmzüge", desc: "Ganzrücken" },
+        { name: "T-Bar Row", desc: "Mittlerer Rücken" },
+        { name: "Kurzhantelrudern einarmig", desc: "Mittlerer Rücken & Lat" },
+        { name: "Shrugs", desc: "Oberer Rücken" },
+        { name: "Reverse Flys", desc: "Oberer Rücken & hintere Schulter" },
+        { name: "Back Extensions", desc: "Unterer Rücken" },
+        { name: "Schrägbankcurls (Kurzhantel)", desc: "Langer Kopf Bizeps" },
+        { name: "Scott-/Preacher-Curls", desc: "Kurzer Kopf Bizeps" },
+        { name: "Hammer Curls", desc: "Brachialis" },
+        { name: "Reverse Curls", desc: "Brachialis & Unterarme" },
+        { name: "Handgelenkcurls", desc: "Unterarme" }
+      ],
+      push: [
+        { name: "Schrägbankdrücken", desc: "Oberer Brust" },
+        { name: "Butterfly", desc: "Mittlere Brust" },
+        { name: "Kabelzüge von oben nach unten / Dips", desc: "Untere Brust" },
+        { name: "Frontheben", desc: "Vorderer Deltamuskel" },
+        { name: "Seitheben", desc: "Seitlicher Deltamuskel" },
+        { name: "Reverse Flys", desc: "Hinterer Deltamuskel" },
+        { name: "French Press", desc: "Langer Kopf Trizeps" },
+        { name: "Pushdowns", desc: "Medialer Kopf Trizeps" }
+      ],
+      legs: [
+        { name: "Beinpresse", desc: "Quadrizeps" },
+        { name: "Beinstrecker", desc: "Quadrizeps, isoliert" },
+        { name: "Beinbeuger liegend", desc: "Hamstrings" },
+        { name: "Wadenheben stehend", desc: "Waden" },
+        { name: "Weighted Crunches auf der Schrägbank", desc: "Gerader Bauch" },
+        { name: "Woodchoppers", desc: "Seitlicher Bauch" },
+        { name: "Leg Raises an der Dip-Maschine", desc: "Unterer Bauch" }
+      ]
+    };
+
+    let mode = null; // "pull", "push", "legs"
+    let doneTasks = JSON.parse(localStorage.getItem('gymTasks') || '{}');
+    let weights = JSON.parse(localStorage.getItem('gymWeights') || '{}');
+    // --- Einstellungen Modal ---
+    function openSettingsModal() {
+      document.getElementById('settingsModal').style.display = 'flex';
+      renderSettingsContent();
+    }
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').style.display = 'none';
+    }
+    document.getElementById('settingsBtn').onclick = openSettingsModal;
+    document.getElementById('closeSettings').onclick = closeSettingsModal;
+    document.getElementById('settingsModal').onclick = function(e) {
+      if(e.target === this) closeSettingsModal();
+    };
+
+    let settingsSearchTerm = '';
+    function renderSettingsContent() {
+      const content = document.getElementById('settingsContent');
+      let html = '';
+      ['pull','push','legs'].forEach(modeKey => {
+        let groupHtml = '';
+        plans[modeKey].forEach((ex, exIdx) => {
+          const key = `${modeKey}-${exIdx}`;
+          const searchStr = (ex.name + ' ' + ex.desc).toLowerCase();
+          if(settingsSearchTerm && searchStr.indexOf(settingsSearchTerm.toLowerCase()) === -1) return;
+          groupHtml += `<div style="display:flex;align-items:center;justify-content:space-between;margin:0.7rem 0 0.7rem 0;">
+            <span style="flex:1;">${ex.name}</span>
+            <input type="number" min="0" step="0.5" value="${weights[key]||''}" style="width:70px;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid #ffd700;background:#232526;color:#ffd700;font-size:1rem;text-align:right;" onchange="window.setWeight('${key}',this.value)"> kg
+          </div>`;
+        });
+        if(groupHtml)
+          html += `<div style="font-weight:bold;color:#ffd700;margin-top:1.2rem">${modeKey === 'pull' ? 'Pull (Rücken & Bizeps)' : modeKey === 'push' ? 'Push (Brust, Schulter & Trizeps)' : 'Legs (Beine & Bauch)'}</div>` + groupHtml;
+      });
+      content.innerHTML = html;
+      const input = document.getElementById('settingsSearchInput');
+      input.value = settingsSearchTerm;
+      input.oninput = function() {
+        settingsSearchTerm = this.value;
+        renderSettingsContent();
+      };
+    }
+    window.setWeight = function(key, value) {
+      weights[key] = value;
+      localStorage.setItem('gymWeights', JSON.stringify(weights));
+    }
+
+    function saveState() {
+      localStorage.setItem('gymTasks', JSON.stringify(doneTasks));
+    }
+
+    function toggleTask(exIdx) {
+      const key = `${mode}-${exIdx}`;
+      doneTasks[key] = !doneTasks[key];
+      saveState();
+      renderPlan();
+    }
+
+    function resetTasks() {
+      Object.keys(doneTasks).forEach(k => { if(k.startsWith(mode)) delete doneTasks[k]; });
+      saveState();
+      renderPlan();
+    }
+
+    function goBack() {
+      mode = null;
+      renderStart();
+    }
+
+    function renderStart() {
+      document.getElementById('resetBtn').style.display = 'none';
+      document.getElementById('backBtn').style.display = 'none';
+      const app = document.getElementById('app');
+      app.innerHTML = `<div style="text-align:center;margin-top:2rem">
+        <div style="font-size:1.3rem;margin-bottom:2rem">Was möchtest du heute trainieren?</div>
+        <button class="reset-btn" style="margin-bottom:1rem" onclick="selectMode('pull')">Pull (Rücken & Bizeps)</button><br>
+        <button class="reset-btn" style="margin-bottom:1rem" onclick="selectMode('push')">Push (Brust, Schulter & Trizeps)</button><br>
+        <button class="reset-btn" onclick="selectMode('legs')">Legs (Beine & Bauch)</button>
+      </div>`;
+    }
+
+    window.selectMode = function(m) {
+      mode = m;
+      renderPlan();
+    }
+
+    let searchTerm = '';
+    function renderPlan() {
+      document.getElementById('resetBtn').style.display = '';
+      document.getElementById('backBtn').style.display = '';
+      const app = document.getElementById('app');
+      const plan = plans[mode];
+      app.innerHTML = `<div class="muscle-title" style="text-align:center;margin-bottom:1.5rem">${mode === 'pull' ? 'Pull (Rücken & Bizeps)' : mode === 'push' ? 'Push (Brust, Schulter & Trizeps)' : 'Legs (Beine & Bauch)'}</div>
+        <div id="exerciseScroll" style="max-height:55vh;overflow-y:auto;"></div>`;
+      const scrollDiv = document.getElementById('exerciseScroll');
+      const ul = document.createElement('ul');
+      ul.className = 'exercise-list';
+      plan.forEach((ex, exIdx) => {
+        const key = `${mode}-${exIdx}`;
+        const li = document.createElement('li');
+        li.className = 'exercise-item' + (doneTasks[key] ? ' done' : '');
+        li.style.cursor = 'pointer';
+        li.onclick = () => toggleTask(exIdx);
+        li.innerHTML = `
+          <span class="exercise-name">${ex.name}</span>
+          <span class="exercise-desc">${ex.desc}</span>
+          <span style="margin-left:0.7rem;color:#ffd700;font-size:0.95rem;">${weights[key] ? weights[key] + ' kg' : ''}</span>
+          <button class="check-btn" style="pointer-events:none">
+            ${doneTasks[key] ? '✔️' : ''}
+          </button>
+        `;
+        ul.appendChild(li);
+      });
+      scrollDiv.appendChild(ul);
+    }
+
+    document.getElementById('backBtn').onclick = goBack;
+    document.getElementById('resetBtn').onclick = resetTasks;
+
+    renderStart();
+  </script>
+</body>
+</html>
